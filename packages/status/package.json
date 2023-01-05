@@ -27,9 +27,6 @@
     "status",
     "server"
   ],
-  "yakumo": {
-    "client": "./build/client"
-  },
   "koishi": {
     "category": "console",
     "description": {

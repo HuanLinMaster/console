@@ -30,9 +30,6 @@
     "analytics",
     "status"
   ],
-  "yakumo": {
-    "client": "./build/client"
-  },
   "koishi": {
     "category": "console",
     "description": {
