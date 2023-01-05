@@ -9,6 +9,7 @@
     <el-tree
       ref="tree"
       node-key="id"
+      @contextmenu.prevent="openClickMenu"
       :data="plugins.data"
       :draggable="true"
       :auto-expand-parent="false"
@@ -29,17 +30,30 @@
       </div>
     </el-tree>
   </el-scrollbar>
+  <teleport to='body'>
+    <transition name="el-zoom-in-top">
+      <clickMenu 
+        :close="()=>{clickMenuSettings.isshow=false}"
+        :node="clickMenuSettings.node"
+        :style="clickMenuSettings.style"
+        v-if="clickMenuSettings.isshow">
+      </clickMenu>
+    </transition>
+  </teleport>
 </template>
 
 <script lang="ts" setup>
 
-import { ref, computed, onActivated, nextTick, watch } from 'vue'
+import { ref, computed, reactive, onActivated, nextTick, watch } from 'vue'
 import { send } from '@koishijs/client'
 import { Tree, plugins, setPath, splitPath } from './utils'
+
+import clickMenu from './clickMenu.vue';
 
 const props = defineProps<{
   modelValue: string
 }>()
+
 
 const emits = defineEmits(['update:modelValue'])
 
@@ -86,7 +100,10 @@ function handleDrop(source: Node, target: Node, position: 'before' | 'after' | '
   const parent = position === 'inner' ? target : target.parent
   const oldPath = source.data.path
   const ctxPath = parent.data.path
+  console.log("old",oldPath,'ctx',ctxPath);
   const index = parent.childNodes.findIndex(node => node.data.path === oldPath)
+  console.log(index);
+  
   send('manager/teleport', oldPath, ctxPath, index)
   const segments1 = splitPath(oldPath)
   const segments2 = ctxPath ? splitPath(ctxPath) : []
@@ -117,6 +134,38 @@ onActivated(async () => {
   if (!element) return
   root.value['setScrollTop'](element.offsetTop - (container.offsetHeight - element.offsetHeight) / 2)
 })
+
+var clickMenuSettings = reactive({
+  isshow: false,
+  hasDisabledSetting: false,
+  style: {
+    left: "0px",
+    top: "0px",
+    position: "absolute",
+  },
+  node: {
+    short: '',
+    long: ''
+  }
+})
+
+const openClickMenu = (event) => {  
+  if (event.pageX + 400 > document.documentElement.clientWidth) {
+    clickMenuSettings.style.left = (event.pageX - 200) + "px"
+  } else {
+    clickMenuSettings.style.left = event.pageX + "px"
+  }
+  let groupName = event.path[0].innerHTML.split("：")[1]
+  for (const item in plugins.value.paths) {
+    if(item.endsWith(`group:${groupName}`)) {
+      clickMenuSettings.node.short = groupName;
+      clickMenuSettings.node.long = item;
+    }
+  }
+  clickMenuSettings.isshow = true
+  clickMenuSettings.style.top = event.pageY + "px"
+    
+}
 
 </script>
 
