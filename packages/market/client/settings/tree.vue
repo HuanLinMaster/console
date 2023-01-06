@@ -155,13 +155,7 @@ var clickMenuSettings = reactive({
 })
 
 var clickMenuHeight = ref(0);
-// setInterval(()=>{
-//   console.log(clickMenuHeight.value);
-  
-// },600)
 const updateClickMenuHeight = ()=>{
-  // let halfHeight = document.documentElement.clientHeight/2;
-  // console.log('nb',Number(clickMenuSettings.style.top.replace("px","")),clickMenuHeight.value,document.documentElement.clientHeight);
   if(Number(clickMenuSettings.style.top.replace("px","")) + clickMenuHeight.value >= document.documentElement.clientHeight) clickMenuSettings.style.top = document.documentElement.clientHeight - clickMenuHeight.value - 30 + "px";
 }
 
@@ -171,14 +165,16 @@ const openClickMenu = (event) => {
   } else {
     clickMenuSettings.style.left = event.pageX + "px"
   }
+  console.log(event.path);
+  
   let groupName = event.path[0].innerHTML.split("：")[1]
+  groupName = groupName == undefined?event.path[0].innerHTML:groupName
   for (const item in plugins.value.paths) {
-    if(item.endsWith(`group:${groupName}`)) {
+    if(item.endsWith(`${groupName}`)) {
       clickMenuSettings.node.short = groupName;
       clickMenuSettings.node.long = item;
     } else {
-      console.log(item);
-      
+      // console.log(groupName,item);
     }
   }
   clickMenuSettings.isshow = true

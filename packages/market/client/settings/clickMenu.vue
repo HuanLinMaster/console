@@ -110,6 +110,7 @@ const isGroup = computed(()=>{
                 @click="unGroup(props.node.long)">
                 解散分组
             </div>
+            <div class="a-line"></div>
             <div 
                 class="disable-plugin item"
                 v-if="isGroup"
@@ -122,6 +123,7 @@ const isGroup = computed(()=>{
                 @click="undefined">
                 启用分组下所有插件
             </div>
+            <div class="a-line"></div>
             <div 
                 v-for="item of groupList" 
                 :key="item.name"
@@ -186,6 +188,10 @@ html.dark .box-card {
     color:#7cc658;
 }
 .a-line {
-
+    width: 100%;
+    height: 1px;
+    margin-left: -8px;
+    padding-right: 18px;
+    background-color: #eee;
 }
 </style>
