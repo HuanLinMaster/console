@@ -34,8 +34,10 @@
     <transition name="el-zoom-in-top">
       <clickMenu 
         :close="()=>{clickMenuSettings.isshow=false}"
+        :open="updateClickMenuHeight"
         :node="clickMenuSettings.node"
         :style="clickMenuSettings.style"
+        v-model="clickMenuHeight"
         v-if="clickMenuSettings.isshow">
       </clickMenu>
     </transition>
@@ -81,6 +83,9 @@ interface Node {
 function allowDrop(source: Node, target: Node, type: 'inner' | 'prev' | 'next') {
   if (type !== 'inner') return target.data.path !== ''
   const segments = splitPath(target.data.path)
+  if(!segments[segments.length - 1].startsWith) {
+    return false;
+  }
   return segments[segments.length - 1].startsWith('group:')
 }
 
@@ -149,6 +154,17 @@ var clickMenuSettings = reactive({
   }
 })
 
+var clickMenuHeight = ref(0);
+// setInterval(()=>{
+//   console.log(clickMenuHeight.value);
+  
+// },600)
+const updateClickMenuHeight = ()=>{
+  // let halfHeight = document.documentElement.clientHeight/2;
+  // console.log('nb',Number(clickMenuSettings.style.top.replace("px","")),clickMenuHeight.value,document.documentElement.clientHeight);
+  if(Number(clickMenuSettings.style.top.replace("px","")) + clickMenuHeight.value >= document.documentElement.clientHeight) clickMenuSettings.style.top = document.documentElement.clientHeight - clickMenuHeight.value - 30 + "px";
+}
+
 const openClickMenu = (event) => {  
   if (event.pageX + 400 > document.documentElement.clientWidth) {
     clickMenuSettings.style.left = (event.pageX - 200) + "px"
@@ -160,6 +176,9 @@ const openClickMenu = (event) => {
     if(item.endsWith(`group:${groupName}`)) {
       clickMenuSettings.node.short = groupName;
       clickMenuSettings.node.long = item;
+    } else {
+      console.log(item);
+      
     }
   }
   clickMenuSettings.isshow = true

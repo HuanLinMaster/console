@@ -148,6 +148,8 @@ const menu = computed(() => {
 })
 
 async function execute(event: 'unload' | 'reload') {
+  console.log(`manager/${event}`,current.value.path,config.value,current.value.target);
+  
   await send(`manager/${event}`, current.value.path, config.value, current.value.target)
   if (current.value.target) {
     const segments = splitPath(current.value.path)
