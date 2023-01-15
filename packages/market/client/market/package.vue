@@ -8,8 +8,23 @@
         <h2>
           <a :href="data.links.homepage" target="_blank" rel="noopener noreferrer">{{ data.shortname }}</a>
           <el-tooltip v-if="data.verified" content="官方认证" placement="right">
-            <span class="verified">
+            <span class="icon verified" @click="$emit('query', 'is:verified')">
               <k-icon name="verified"></k-icon>
+            </span>
+          </el-tooltip>
+          <el-tooltip v-else-if="data.insecure" content="不安全" placement="right">
+            <span class="icon insecure" @click="$emit('query', 'is:insecure')">
+              <k-icon name="insecure"></k-icon>
+            </span>
+          </el-tooltip>
+          <el-tooltip v-else-if="data.manifest.preview" content="开发中" placement="right">
+            <span class="icon preview" @click="$emit('query', 'is:preview')">
+              <k-icon name="preview"></k-icon>
+            </span>
+          </el-tooltip>
+          <el-tooltip v-else-if="data.createdAt >= aWeekAgo" content="近期新增" placement="right">
+            <span class="icon newborn" @click="$emit('query', 'after:' + aWeekAgo)">
+              <k-icon name="newborn"></k-icon>
             </span>
           </el-tooltip>
         </h2>
@@ -49,8 +64,8 @@
       </template>
       <span class="spacer grow"></span>
       <div class="avatars">
-        <el-tooltip v-for="({ email, name }) in data.contributors" :key="name" :content="name">
-          <a @click="$emit('query', 'user:' + name)">
+        <el-tooltip v-for="({ email, name }) in getUsers(data)" :key="name" :content="name">
+          <a @click="$emit('query', 'email:' + email)">
             <img :src="getAvatar(email)">
           </a>
         </el-tooltip>
@@ -65,8 +80,10 @@ import { computed, PropType } from 'vue'
 import { AnalyzedPackage } from '@koishijs/registry'
 import { store, config } from '@koishijs/client'
 import { active, getMixedMeta } from '../utils'
-import { resolveCategory } from './utils'
+import { getUsers, resolveCategory } from './utils'
 import md5 from 'spark-md5'
+
+const aWeekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString()
 
 defineEmits(['query', 'click'])
 
@@ -166,22 +183,36 @@ function formatSize(value: number) {
         line-height: 1.5rem;
       }
 
-      .verified {
+      .icon {
         margin-left: 0.6rem;
         height: 1.125rem;
         width: 1.125rem;
         vertical-align: -2px;
         position: relative;
         display: inline-block;
+        cursor: pointer;
 
         .k-icon {
-          color: var(--success);
           height: 100%;
           transition: color 0.3s ease;
           z-index: 10;
           position: relative;
         }
+      }
 
+      .verified, .newborn {
+        color: var(--success);
+      }
+
+      .preview {
+        color: var(--warning);
+      }
+
+      .insecure {
+        color: var(--danger);
+      }
+
+      .verified, .insecure {
         &::before {
           position: absolute;
           top: 25%;

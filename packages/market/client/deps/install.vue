@@ -13,8 +13,10 @@
       </el-select>
     </template>
 
-    <div class="padding" v-if="!active || workspace || !Object.keys(data[version].peers).length"></div>
-    <el-scrollbar v-else>
+    <p class="danger" v-if="danger">{{ danger }}</p>
+    <p class="warning" v-if="warning">{{ warning }}</p>
+
+    <el-scrollbar v-if="active && !workspace && Object.keys(data[version].peers).length">
       <table>
         <tr>
           <td>依赖名称</td>
@@ -62,7 +64,7 @@
         </template>
         <template v-else>
           <el-button v-if="current" @click="installDep('')">移除</el-button>
-          <el-button :type="data[version].result" @click="installDep(version)" :disabled="unchanged">
+          <el-button :type="result" @click="installDep(version)" :disabled="unchanged">
             {{ current ? '更新' : '安装' }}
           </el-button>
         </template>
@@ -77,11 +79,12 @@ import { computed, ref, watch } from 'vue'
 import { router, send, store } from '@koishijs/client'
 import { analyzeVersions, showDialog, install } from './utils'
 import { active, config } from '../utils'
+import { parse } from 'semver'
 
 function installDep(version: string) {
   const target = shortname.value
   install({ [active.value]: version }, async () => {
-    if (getPaths(target).length) return
+    if (!version || !target || getPaths(target).length) return
     const path = target + ':' + Math.random().toString(36).slice(2, 8)
     await send('manager/unload', path, {})
     await router.push('/plugins/' + path)
@@ -104,9 +107,7 @@ const selectVersion = computed({
 })
 
 const unchanged = computed(() => version.value === store.dependencies[active.value]?.request)
-
 const current = computed(() => store.dependencies[active.value]?.resolved)
-
 const local = computed(() => store.packages?.[active.value])
 
 const workspace = computed(() => {
@@ -118,6 +119,30 @@ const workspace = computed(() => {
 const data = computed(() => {
   if (!active.value || workspace.value) return
   return analyzeVersions(active.value)
+})
+
+const danger = computed(() => {
+  if (workspace.value || !store.market?.data[active.value]?.insecure) return
+  return '警告：从此插件的最新版本中检测出安全性问题。安装或升级此插件可能导致严重问题。'
+})
+
+const warning = computed(() => {
+  if (!version.value || !current.value || workspace.value) return
+  try {
+    const source = parse(current.value)
+    const target = parse(version.value)
+    if (source.major !== target.major || !source.major && source.minor !== target.minor) {
+      return '提示：你正在更改依赖的主版本号。这可能导致不兼容的行为。'
+    }
+  } catch {}
+})
+
+const result = computed(() => {
+  if (!version.value) return
+  const { result } = data.value[version.value]
+  if (result === 'danger' || danger.value) return 'danger'
+  if (result === 'warning' || warning.value) return 'warning'
+  return result
 })
 
 watch(() => active.value, (value) => {
@@ -141,11 +166,17 @@ function* find(target: string, plugins: {}, prefix: string): IterableIterator<[s
   }
 }
 
-const shortname = computed(() => active.value.replace(/(koishi-|^@koishijs\/)plugin-/, ''))
+const pluginRegExp = /(koishi-|^@koishijs\/)plugin-/
+
+const shortname = computed(() => {
+  if (!pluginRegExp.test(active.value)) return ''
+  return active.value.replace(pluginRegExp, '')
+})
 
 const paths = computed(() => getPaths(shortname.value))
 
 function getPaths(target: string) {
+  if (!target) return []
   return [...find(target, store.config.plugins, '')]
 }
 
@@ -168,6 +199,7 @@ function configure(path: string | true) {
     gap: 0 0.5em;
     align-items: center;
     padding-right: 36px;
+    padding-bottom: 4px;
 
     .el-dialog__title {
       font-weight: 500;
@@ -183,8 +215,12 @@ function configure(path: string | true) {
     }
   }
 
-  .padding {
-    height: 2rem;
+  .warning {
+    color: var(--warning);
+  }
+
+  .danger {
+    color: var(--danger);
   }
 
   .version-badges {

@@ -23,7 +23,7 @@
         <k-icon name="search"></k-icon>
       </div>
       <div class="market-filter">
-        共搜索到 {{ realWords.length ? objects.length + ' / ' : '' }}{{ Object.keys(store.market.data).length }} 个插件。
+        共搜索到 {{ realWords.length ? all.length + ' / ' : '' }}{{ visible.length }} 个插件。
         <el-checkbox v-if="store.packages" v-model="config.showInstalled">
           {{ global.static ? '只显示可用插件' : `显示已下载的插件 (共 ${installed} 个)` }}
         </el-checkbox>
@@ -49,7 +49,7 @@ import { router, store, global } from '@koishijs/client'
 import { computed, reactive, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { config, refresh } from '../utils'
-import { validate } from './utils'
+import { getUsers, validate } from './utils'
 import PackageView from './package.vue'
 
 const route = useRoute()
@@ -96,10 +96,17 @@ function onQuery(word: string) {
   words.push('')
 }
 
+const visible = computed(() => {
+  return Object.values(store.market.data).filter((data) => {
+    return !data.manifest.hidden || words.includes('show:hidden')
+  })
+})
+
 const all = computed(() => {
-  return Object
-    .values(store.market.data)
-    .filter(data => words.every(word => validate(data, word)))
+  return visible.value.filter((data) => {
+    const users = getUsers(data)
+    return words.every(word => validate(data, word, users))
+  })
 })
 
 const installed = computed(() => {
